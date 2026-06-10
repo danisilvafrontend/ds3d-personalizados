@@ -20,8 +20,14 @@ if (!isset($pageTitle)) {
     <div class="container header-inner">
         <div class="brand">
             <a href="index.php" class="brand-link">
-                <span class="brand-title">DS 3D Personalizados</span>
-                <span class="brand-subtitle">por DS Dani Silva Criação Web</span>
+                <img
+                    src="assets/img/logo3d-personalizados.jpg"
+                    alt="DS 3D Personalizados"
+                    class="brand-logo"
+                    width="72"
+                    height="auto"
+                    loading="eager"
+                >
             </a>
         </div>
         <nav class="main-nav">
