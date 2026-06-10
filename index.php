@@ -25,11 +25,20 @@ require __DIR__ . '/includes/header.php';
                 <li>Atendimento direto</li>
             </ul>
         </div>
-        <aside class="hero-card">
-            <p class="mini-label">Estimativas a partir de</p>
-            <strong><?= formatMoney(21.36) ?></strong>
-            <span>Valores variam conforme personalização e quantidade.</span>
-        </aside>
+        <div class="hero-image-wrap">
+            <img
+                src="assets/img/banner-hero.jpg"
+                alt="Impressora 3D produzindo peça personalizada"
+                class="hero-image"
+                width="600"
+                height="400"
+                loading="eager"
+            >
+            <div class="hero-badge">
+                <p class="mini-label">Estimativas a partir de</p>
+                <strong><?= formatMoney(21.36) ?></strong>
+            </div>
+        </div>
     </div>
 </section>
 
