@@ -10,14 +10,15 @@ $tipos = getCustomizationTypes($pdo);
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="hero-section">
+    <div class="hero-bg"></div>
     <div class="container hero-grid">
         <div class="hero-copy">
             <span class="eyebrow">Peças sob encomenda</span>
-            <h1>Peças 3D personalizadas com acabamento artesanal e orçamento rápido.</h1>
+            <h1>Peças 3D personalizadas com acabamento artesanal.</h1>
             <p>Escolha um modelo, personalize cores e detalhes, veja uma estimativa e envie seu pedido direto pelo site.</p>
             <div class="hero-actions">
                 <a href="#modelos" class="btn btn-primary">Ver modelos</a>
-                <a href="#simulador" class="btn btn-secondary">Simular valor</a>
+                <a href="#simulador" class="btn btn-secondary hero-btn-outline">Simular valor</a>
             </div>
             <ul class="hero-benefits">
                 <li>Modelos personalizados</li>
@@ -25,15 +26,10 @@ require __DIR__ . '/includes/header.php';
                 <li>Atendimento direto</li>
             </ul>
         </div>
-        <div class="hero-image-wrap">
-            <img
-                src="assets/img/banner-hero.jpg"
-                alt="Impressora 3D produzindo peça personalizada"
-                class="hero-image"
-                width="600"
-                height="400"
-                loading="eager"
-            >
+        <div class="hero-product-wrap">
+            <div class="hero-product-img">
+                <span class="hero-product-placeholder">Foto do produto em breve</span>
+            </div>
             <div class="hero-badge">
                 <p class="mini-label">Estimativas a partir de</p>
                 <strong><?= formatMoney(21.36) ?></strong>

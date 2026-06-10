@@ -10,7 +10,7 @@
   --color-secondary: #b8833e;
   --color-white: #ffffff;
   --shadow-sm: 0 10px 30px rgba(110, 33, 50, 0.06);
-  --shadow-md: 0 20px 48px rgba(110, 33, 50, 0.12);
+  --shadow-md: 0 20px 48px rgba(110, 33, 50, 0.14);
   --radius-md: 12px;
   --radius-lg: 20px;
   --container: 1180px;
@@ -34,6 +34,7 @@ img { max-width: 100%; display: block; }
 .section { padding: 88px 0; }
 .section-alt { background: var(--color-surface); }
 
+/* ── Header ── */
 .site-header {
   position: sticky;
   top: 0;
@@ -49,8 +50,6 @@ img { max-width: 100%; display: block; }
   gap: 20px;
   padding: 14px 0;
 }
-
-/* ── Brand / Logo ── */
 .brand-link {
   display: flex;
   align-items: center;
@@ -78,11 +77,11 @@ img { max-width: 100%; display: block; }
   font-size: 1.05rem;
   letter-spacing: -0.01em;
 }
-
 .main-nav { display: flex; gap: 24px; font-size: .96rem; }
 .main-nav a { color: var(--color-text-muted); }
 .main-nav a:hover { color: var(--color-primary); }
 
+/* ── Botões ── */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -92,25 +91,121 @@ img { max-width: 100%; display: block; }
   border-radius: 999px;
   font-weight: 600;
   border: 1px solid transparent;
+  transition: background .2s, border-color .2s, color .2s;
 }
 .btn-primary { background: var(--color-primary); color: var(--color-white); }
 .btn-primary:hover { background: var(--color-primary-hover); }
 .btn-secondary { border-color: var(--color-primary); color: var(--color-primary); }
+/* Versão clara do outline para uso sobre fundo escuro */
+.hero-btn-outline { border-color: rgba(255,255,255,.6); color: #fff; }
+.hero-btn-outline:hover { border-color: #fff; background: rgba(255,255,255,.1); }
 
 /* ── Hero ── */
-.hero-section { padding: 92px 0 72px; }
+.hero-section {
+  position: relative;
+  min-height: 560px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 100px 0 80px;
+}
+/* Background da imagem + overlay */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, rgba(20,8,10,.72) 40%, rgba(20,8,10,.35) 100%),
+    url('assets/img/banner-hero.jpg') center/cover no-repeat;
+  z-index: 0;
+}
+/* Grid por cima do fundo */
 .hero-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 1fr 420px;
   gap: 48px;
   align-items: center;
+  width: min(100% - 32px, var(--container));
+  margin: 0 auto;
 }
-.simulator-grid, .contact-grid {
-  display: grid;
-  grid-template-columns: 1.2fr .8fr;
-  gap: 32px;
-  align-items: start;
+
+/* Textos sobre o fundo escuro */
+.hero-copy .eyebrow { color: var(--color-secondary); }
+.hero-copy h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.2vw, 2.8rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 0 0 16px;
+  max-width: 18ch;
 }
+.hero-copy p { color: rgba(255,255,255,.78); max-width: 52ch; }
+.hero-actions { display: flex; gap: 14px; margin: 28px 0; flex-wrap: wrap; }
+.hero-benefits {
+  display: flex;
+  gap: 18px;
+  padding: 0;
+  list-style: none;
+  color: rgba(255,255,255,.55);
+  flex-wrap: wrap;
+  font-size: .9rem;
+}
+.hero-benefits li::before { content: '✓ '; color: var(--color-secondary); }
+
+/* Card do produto (lado direito) */
+.hero-product-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.hero-product-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,.08);
+  border: 1px dashed rgba(255,255,255,.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.hero-product-placeholder {
+  color: rgba(255,255,255,.4);
+  font-size: .88rem;
+  text-align: center;
+  padding: 16px;
+}
+/* Imagem real (quando disponível) */
+.hero-product-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  display: block;
+}
+.hero-badge {
+  position: absolute;
+  bottom: -18px;
+  left: -18px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 14px 20px;
+  min-width: 160px;
+}
+.hero-badge strong {
+  display: block;
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+}
+.mini-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted); }
+
+/* ── Seções ── */
 .eyebrow {
   display: inline-block;
   margin-bottom: 12px;
@@ -120,61 +215,28 @@ img { max-width: 100%; display: block; }
   text-transform: uppercase;
   letter-spacing: .08em;
 }
-.hero-copy h1, .section-heading h2 {
+.section-heading h2 {
   font-family: var(--font-display);
-  line-height: 1.08;
+  line-height: 1.1;
   letter-spacing: -0.02em;
 }
-.hero-copy h1 { font-size: clamp(2.4rem, 5vw, 4.8rem); margin: 0 0 18px; max-width: 12ch; }
-.hero-copy p { color: var(--color-text-muted); max-width: 58ch; }
-.hero-actions { display: flex; gap: 14px; margin: 28px 0; flex-wrap: wrap; }
-.hero-benefits { display: flex; gap: 18px; padding: 0; list-style: none; color: var(--color-text-muted); flex-wrap: wrap; }
-
-/* Hero imagem */
-.hero-image-wrap {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: visible;
-}
-.hero-image {
-  width: 100%;
-  height: 420px;
-  object-fit: cover;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  display: block;
-}
-.hero-badge {
-  position: absolute;
-  bottom: -20px;
-  left: -20px;
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: 14px 20px;
-  min-width: 160px;
-}
-.hero-badge strong {
-  display: block;
-  font-size: 1.6rem;
-  color: var(--color-primary);
-  margin: 4px 0 0;
-  font-family: var(--font-display);
-}
-
-/* Cards legado (simulador / contato) */
-.hero-card, .simulator-card, .contact-card, .model-card, .step-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-.hero-card { padding: 28px; }
-.hero-card strong { display: block; font-size: 2rem; color: var(--color-primary); margin: 6px 0; }
-.mini-label { font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted); }
 .section-heading { margin-bottom: 32px; }
-.section-heading h2 { font-size: clamp(2rem, 3vw, 3rem); margin: 0; max-width: 14ch; }
+.section-heading h2 { font-size: clamp(1.8rem, 3vw, 2.8rem); margin: 0; max-width: 14ch; }
+
+.simulator-grid, .contact-grid {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* Cards */
+.simulator-card, .contact-card, .model-card, .step-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
 .steps-grid, .models-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -238,24 +300,22 @@ img { max-width: 100%; display: block; }
 }
 .site-footer { background: #f7f0ea; }
 
+/* ── Responsivo ── */
 @media (max-width: 960px) {
   .main-nav { display: none; }
   .hero-grid { grid-template-columns: 1fr; }
+  .hero-product-wrap { display: none; }
+  .hero-copy h1 { max-width: 100%; }
   .simulator-grid, .contact-grid, .footer-grid,
   .steps-grid, .models-grid { grid-template-columns: 1fr 1fr; }
-  .hero-image { height: 320px; }
-  .hero-badge { bottom: -16px; left: 16px; }
 }
 
 @media (max-width: 680px) {
   .section { padding: 64px 0; }
-  .hero-grid, .simulator-grid, .contact-grid,
+  .simulator-grid, .contact-grid,
   .steps-grid, .models-grid, .footer-grid { grid-template-columns: 1fr; }
   .header-inner { flex-wrap: wrap; }
-  .hero-copy h1 { max-width: 100%; }
   .brand-icon { width: 38px; height: 38px; }
   .brand-text { font-size: .9rem; }
-  .hero-image { height: 240px; }
-  .hero-badge { bottom: -14px; left: 12px; min-width: 140px; }
-  .hero-badge strong { font-size: 1.3rem; }
+  .hero-section { min-height: 480px; padding: 80px 0 60px; }
 }
