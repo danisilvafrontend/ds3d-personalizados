@@ -46,7 +46,7 @@ img { max-width: 100%; display: block; }
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 12px 0;
+  padding: 14px 0;
 }
 .brand-link {
   display: flex;
@@ -54,12 +54,12 @@ img { max-width: 100%; display: block; }
 }
 .brand-logo {
   width: auto;
-  max-height: 48px;
+  max-height: 72px;
   object-fit: contain;
   display: block;
 }
 
-/* legado — mantido para fallback caso brand-title ainda exista em algum lugar */
+/* legado — mantido para fallback */
 .brand-title {
   display: block;
   font-family: var(--font-display);
@@ -196,5 +196,5 @@ img { max-width: 100%; display: block; }
   .steps-grid, .models-grid, .footer-grid { grid-template-columns: 1fr; }
   .header-inner { flex-wrap: wrap; }
   .hero-copy h1 { max-width: 100%; }
-  .brand-logo { max-height: 40px; }
+  .brand-logo { max-height: 60px; }
 }
