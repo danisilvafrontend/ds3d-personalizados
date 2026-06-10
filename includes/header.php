@@ -21,13 +21,16 @@ if (!isset($pageTitle)) {
         <div class="brand">
             <a href="index.php" class="brand-link">
                 <img
-                    src="assets/img/logo3d-personalizados.jpg"
-                    alt="DS 3D Personalizados"
-                    class="brand-logo"
-                    width="72"
-                    height="auto"
+                    src="assets/img/icone.svg"
+                    alt="DS"
+                    class="brand-icon"
+                    width="36"
+                    height="36"
                     loading="eager"
                 >
+                <span class="brand-text">
+                    <strong>3D</strong> Personalizados
+                </span>
             </a>
         </div>
         <nav class="main-nav">
