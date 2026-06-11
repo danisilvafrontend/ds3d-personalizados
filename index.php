@@ -28,18 +28,11 @@ require __DIR__ . '/includes/header.php';
         </div>
         <div class="hero-product-wrap">
             <div class="hero-product-img hero-product-video">
-                <video
-                    src="/assets/img/impressao.mp4"
-                    autoplay
-                    muted
-                    loop
-                    playsinline
-                    preload="metadata"
-                ></video>
+                <video src="/assets/img/impressao.mp4" autoplay muted loop playsinline preload="metadata"></video>
             </div>
             <div class="hero-badge">
                 <p class="mini-label">Estimativas a partir de</p>
-                <strong><?= formatMoney(15.00) ?></strong>
+                <strong><?= formatMoney(21.36) ?></strong>
             </div>
         </div>
     </div>
@@ -68,27 +61,38 @@ require __DIR__ . '/includes/header.php';
         </div>
         <div class="models-grid">
             <?php foreach ($modelos as $modelo): ?>
+                <?php
+                $imgStyle = !empty($modelo['imagem_principal'])
+                    ? 'background-image:url(/assets/img/modelos/' . htmlspecialchars($modelo['imagem_principal']) . ')'
+                    : '';
+                $modeloJson = htmlspecialchars(json_encode([
+                    'id'          => (int)$modelo['id'],
+                    'nome'        => $modelo['nome'],
+                    'categoria'   => $modelo['categoria_nome'] ?? 'Modelo',
+                    'descricao'   => $modelo['descricao'] ?? $modelo['descricao_curta'] ?? '',
+                    'preco_base'  => (float)$modelo['preco_base'],
+                    'imagem'      => $modelo['imagem_principal'] ?? '',
+                ], JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                ?>
                 <article class="model-card">
-                    <div class="model-thumb">
-                        <?php if (!empty($modelo['imagem_principal'])): ?>
-                            <img
-                                src="/assets/img/modelos/<?= htmlspecialchars($modelo['imagem_principal']) ?>"
-                                alt="<?= htmlspecialchars($modelo['nome']) ?>"
-                                loading="lazy"
-                                width="400"
-                                height="400"
-                            >
-                        <?php else: ?>
+                    <div class="model-thumb" style="<?= $imgStyle ?>">
+                        <?php if (empty($modelo['imagem_principal'])): ?>
                             <span class="model-thumb-placeholder">Foto em breve</span>
                         <?php endif; ?>
                     </div>
                     <div class="model-content">
                         <p class="card-tag"><?= htmlspecialchars($modelo['categoria_nome'] ?? 'Modelo') ?></p>
                         <h3><?= htmlspecialchars($modelo['nome']) ?></h3>
-                        <p><?= htmlspecialchars($modelo['descricao_curta'] ?? 'Peça personalizada sob encomenda.') ?></p>
+                        <p class="model-desc"><?= htmlspecialchars($modelo['descricao_curta'] ?? 'Peça personalizada sob encomenda.') ?></p>
                         <div class="model-footer">
-                            <strong><?= formatMoney((float)$modelo['preco_base']) ?></strong>
-                            <a href="#simulador" class="text-link" data-model-id="<?= (int)$modelo['id'] ?>">Quero este modelo</a>
+                            <div class="model-price">
+                                <span class="price-label">A partir de</span>
+                                <strong><?= formatMoney((float)$modelo['preco_base']) ?></strong>
+                            </div>
+                            <div class="model-actions">
+                                <a href="#simulador" class="btn btn-primary btn-sm" data-model-id="<?= (int)$modelo['id'] ?>">Quero esse modelo</a>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="abrirModal(<?= $modeloJson ?>)">Detalhes</button>
+                            </div>
                         </div>
                     </div>
                 </article>
@@ -96,6 +100,51 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 </section>
+
+<!-- Modal de detalhes do modelo -->
+<div id="modeloModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalNome" hidden>
+    <div class="modal-box">
+        <button class="modal-close" onclick="fecharModal()" aria-label="Fechar">&times;</button>
+        <div class="modal-inner">
+            <div class="modal-img-wrap">
+                <div class="modal-img" id="modalImg"></div>
+            </div>
+            <div class="modal-body">
+                <p class="card-tag" id="modalCategoria"></p>
+                <h2 id="modalNome"></h2>
+                <p id="modalDesc" class="modal-desc-text"></p>
+
+                <div class="discount-table">
+                    <h4>Desconto progressivo por quantidade</h4>
+                    <table>
+                        <thead>
+                            <tr><th>Faixa</th><th>Qtde</th><th>Desconto</th><th>Preço/un</th></tr>
+                        </thead>
+                        <tbody id="discountTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="modal-simulator">
+                    <h4>Simule seu pedido</h4>
+                    <div class="modal-sim-row">
+                        <label for="modalQtd">Quantidade:</label>
+                        <input type="number" id="modalQtd" min="1" value="1">
+                    </div>
+                    <div class="modal-sim-result">
+                        <span>Total estimado:</span>
+                        <strong id="modalTotal">R$ 0,00</strong>
+                        <small id="modalEconomia" class="economia-tag"></small>
+                    </div>
+                </div>
+
+                <div class="modal-cta">
+                    <a href="#simulador" class="btn btn-primary" id="modalBtnSimulador" onclick="fecharModal()">Quero esse modelo</a>
+                    <a href="https://wa.me/55" target="_blank" rel="noopener" class="btn btn-whatsapp" id="modalBtnWhatsapp">Pedir pelo WhatsApp</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <section class="section" id="simulador">
     <div class="container simulator-grid">
@@ -118,7 +167,6 @@ require __DIR__ . '/includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-
             <?php foreach ($tipos as $tipo): ?>
                 <?php if (in_array($tipo['slug'], ['cor', 'simbolo'], true)): ?>
                     <div class="form-group">
@@ -134,24 +182,20 @@ require __DIR__ . '/includes/header.php';
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>
-
             <div class="form-group">
                 <label for="nome_gravado">Nome gravado</label>
                 <input type="text" id="nome_gravado" name="nome_gravado" placeholder="Opcional">
                 <small>Adicional sugerido será aplicado quando preenchido.</small>
             </div>
-
             <div class="form-group">
                 <label for="quantidade">Quantidade</label>
                 <input type="number" id="quantidade" name="quantidade" min="1" value="1">
             </div>
-
             <div class="estimate-box">
                 <span>Valor estimado</span>
                 <strong id="estimatedValue">R$ 0,00</strong>
                 <p>Valor sujeito à confirmação após análise final.</p>
             </div>
-
             <div class="simulator-actions">
                 <button type="button" class="btn btn-primary" id="btnEstimate">Atualizar estimativa</button>
                 <a href="#contato" class="btn btn-secondary">Solicitar atendimento</a>
@@ -190,4 +234,115 @@ require __DIR__ . '/includes/header.php';
         </form>
     </div>
 </section>
+
+<script>
+const FAIXAS = [
+    { label: 'Unitário',      min: 1,  max: 2,        desc: 0    },
+    { label: 'Pequeno lote', min: 3,  max: 5,        desc: 0.05 },
+    { label: 'Médio lote',   min: 6,  max: 10,       desc: 0.10 },
+    { label: 'Grande lote',  min: 11, max: 20,       desc: 0.15 },
+    { label: 'Atacado',      min: 21, max: Infinity,  desc: 0.20 },
+];
+
+function getDesconto(qtd) {
+    return FAIXAS.find(f => qtd >= f.min && qtd <= f.max) || FAIXAS[0];
+}
+
+function formatBRL(v) {
+    return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+let modeloAtual = null;
+
+function abrirModal(modelo) {
+    modeloAtual = modelo;
+    document.getElementById('modalNome').textContent      = modelo.nome;
+    document.getElementById('modalCategoria').textContent = modelo.categoria;
+    document.getElementById('modalDesc').textContent      = modelo.descricao || 'Peça personalizada sob encomenda.';
+
+    const imgEl = document.getElementById('modalImg');
+    imgEl.style.backgroundImage = modelo.imagem
+        ? `url(/assets/img/modelos/${modelo.imagem})`
+        : '';
+    imgEl.classList.toggle('no-img', !modelo.imagem);
+
+    // Tabela de descontos
+    const tbody = document.getElementById('discountTableBody');
+    tbody.innerHTML = '';
+    FAIXAS.forEach(f => {
+        const preco = modelo.preco_base * (1 - f.desc);
+        const maxLabel = f.max === Infinity ? '+' : `–${f.max}`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${f.label}</td>
+            <td>${f.min}${f.max === Infinity ? '+' : '–' + f.max} un</td>
+            <td class="${f.desc > 0 ? 'desc-badge' : ''}">${f.desc > 0 ? '-' + (f.desc*100) + '%' : '—'}</td>
+            <td><strong>${formatBRL(preco)}</strong></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('modalQtd').value = 1;
+    calcularModal();
+
+    const overlay = document.getElementById('modeloModal');
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => overlay.classList.add('is-open'), 10);
+}
+
+function fecharModal() {
+    const overlay = document.getElementById('modeloModal');
+    overlay.classList.remove('is-open');
+    setTimeout(() => {
+        overlay.hidden = true;
+        document.body.style.overflow = '';
+    }, 260);
+}
+
+function calcularModal() {
+    if (!modeloAtual) return;
+    const qtd   = parseInt(document.getElementById('modalQtd').value) || 1;
+    const faixa = getDesconto(qtd);
+    const preco = modeloAtual.preco_base * (1 - faixa.desc);
+    const total = preco * qtd;
+    const economia = (modeloAtual.preco_base - preco) * qtd;
+
+    document.getElementById('modalTotal').textContent = formatBRL(total);
+    const econEl = document.getElementById('modalEconomia');
+    if (faixa.desc > 0) {
+        econEl.textContent = `Você economiza ${formatBRL(economia)}`;
+        econEl.style.display = 'inline-block';
+    } else {
+        econEl.style.display = 'none';
+    }
+
+    // Destacar linha ativa na tabela
+    document.querySelectorAll('#discountTableBody tr').forEach((tr, i) => {
+        tr.classList.toggle('row-active', FAIXAS[i].label === faixa.label);
+    });
+}
+
+document.getElementById('modalQtd').addEventListener('input', calcularModal);
+
+document.getElementById('modeloModal').addEventListener('click', function(e) {
+    if (e.target === this) fecharModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') fecharModal();
+});
+
+// Botoes "Quero esse modelo" dos cards -> seleciona no simulador
+document.querySelectorAll('[data-model-id]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        const id = this.dataset.modelId;
+        const sel = document.getElementById('modelo_id');
+        if (sel) {
+            sel.value = id;
+            sel.dispatchEvent(new Event('change'));
+        }
+    });
+});
+</script>
+
 <?php require __DIR__ . '/includes/footer.php'; ?>
