@@ -141,7 +141,6 @@ img { max-width: 100%; display: block; }
 .model-card { overflow: hidden; background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
 .model-thumb {
   width: 100%; aspect-ratio: 4/3;
-  background-color: linear-gradient(135deg, #f3e7e0, #efe4dc);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -165,9 +164,17 @@ img { max-width: 100%; display: block; }
   background: rgba(20,8,10,.55);
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
-  opacity: 0; transition: opacity .25s ease;
+  opacity: 0;
+  pointer-events: none; /* ← CORREÇÃO: não bloqueia cliques quando fechado */
+  transition: opacity .25s ease;
 }
-.modal-overlay.is-open { opacity: 1; }
+.modal-overlay[hidden] {
+  display: none !important; /* garante que some completamente */
+}
+.modal-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto; /* ← ativa cliques só quando aberto */
+}
 .modal-box {
   background: var(--color-white);
   border-radius: var(--radius-lg);
