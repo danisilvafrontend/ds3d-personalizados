@@ -66,12 +66,12 @@ require __DIR__ . '/includes/header.php';
                     ? 'background-image:url(/assets/img/modelos/' . htmlspecialchars($modelo['imagem_principal']) . ')'
                     : '';
                 $modeloJson = htmlspecialchars(json_encode([
-                    'id'          => (int)$modelo['id'],
-                    'nome'        => $modelo['nome'],
-                    'categoria'   => $modelo['categoria_nome'] ?? 'Modelo',
-                    'descricao'   => $modelo['descricao'] ?? $modelo['descricao_curta'] ?? '',
-                    'preco_base'  => (float)$modelo['preco_base'],
-                    'imagem'      => $modelo['imagem_principal'] ?? '',
+                    'id'         => (int)$modelo['id'],
+                    'nome'       => $modelo['nome'],
+                    'categoria'  => $modelo['categoria_nome'] ?? 'Modelo',
+                    'descricao'  => $modelo['descricao'] ?? $modelo['descricao_curta'] ?? '',
+                    'preco_base' => (float)$modelo['preco_base'],
+                    'imagem'     => $modelo['imagem_principal'] ?? '',
                 ], JSON_UNESCAPED_UNICODE), ENT_QUOTES);
                 ?>
                 <article class="model-card">
@@ -91,7 +91,7 @@ require __DIR__ . '/includes/header.php';
                             </div>
                             <div class="model-actions">
                                 <a href="#simulador" class="btn btn-primary btn-sm" data-model-id="<?= (int)$modelo['id'] ?>">Quero esse modelo</a>
-                                <button type="button" class="btn btn-outline btn-sm" onclick="abrirModal(<?= $modeloJson ?>)">Detalhes</button>
+                                <button type="button" class="btn btn-outline btn-sm" data-modal='<?= $modeloJson ?>'>Detalhes</button>
                             </div>
                         </div>
                     </div>
@@ -104,7 +104,7 @@ require __DIR__ . '/includes/header.php';
 <!-- Modal de detalhes do modelo -->
 <div id="modeloModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalNome" hidden>
     <div class="modal-box">
-        <button class="modal-close" onclick="fecharModal()" aria-label="Fechar">&times;</button>
+        <button class="modal-close" id="modalCloseBtn" aria-label="Fechar">&times;</button>
         <div class="modal-inner">
             <div class="modal-img-wrap">
                 <div class="modal-img" id="modalImg"></div>
@@ -133,12 +133,12 @@ require __DIR__ . '/includes/header.php';
                     <div class="modal-sim-result">
                         <span>Total estimado:</span>
                         <strong id="modalTotal">R$ 0,00</strong>
-                        <small id="modalEconomia" class="economia-tag"></small>
+                        <small id="modalEconomia" class="economia-tag" style="display:none"></small>
                     </div>
                 </div>
 
                 <div class="modal-cta">
-                    <a href="#simulador" class="btn btn-primary" id="modalBtnSimulador" onclick="fecharModal()">Quero esse modelo</a>
+                    <a href="#simulador" class="btn btn-primary" id="modalBtnSimulador">Quero esse modelo</a>
                     <a href="https://wa.me/55" target="_blank" rel="noopener" class="btn btn-whatsapp" id="modalBtnWhatsapp">Pedir pelo WhatsApp</a>
                 </div>
             </div>
@@ -236,112 +236,132 @@ require __DIR__ . '/includes/header.php';
 </section>
 
 <script>
-const FAIXAS = [
-    { label: 'Unitário',      min: 1,  max: 2,        desc: 0    },
-    { label: 'Pequeno lote', min: 3,  max: 5,        desc: 0.05 },
-    { label: 'Médio lote',   min: 6,  max: 10,       desc: 0.10 },
-    { label: 'Grande lote',  min: 11, max: 20,       desc: 0.15 },
-    { label: 'Atacado',      min: 21, max: Infinity,  desc: 0.20 },
-];
+document.addEventListener('DOMContentLoaded', function () {
 
-function getDesconto(qtd) {
-    return FAIXAS.find(f => qtd >= f.min && qtd <= f.max) || FAIXAS[0];
-}
+    const FAIXAS = [
+        { label: 'Unitário',     min: 1,  max: 2,        desc: 0    },
+        { label: 'Pequeno lote', min: 3,  max: 5,        desc: 0.05 },
+        { label: 'Médio lote',   min: 6,  max: 10,       desc: 0.10 },
+        { label: 'Grande lote',  min: 11, max: 20,       desc: 0.15 },
+        { label: 'Atacado',      min: 21, max: Infinity,  desc: 0.20 },
+    ];
 
-function formatBRL(v) {
-    return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-let modeloAtual = null;
-
-function abrirModal(modelo) {
-    modeloAtual = modelo;
-    document.getElementById('modalNome').textContent      = modelo.nome;
-    document.getElementById('modalCategoria').textContent = modelo.categoria;
-    document.getElementById('modalDesc').textContent      = modelo.descricao || 'Peça personalizada sob encomenda.';
-
-    const imgEl = document.getElementById('modalImg');
-    imgEl.style.backgroundImage = modelo.imagem
-        ? `url(/assets/img/modelos/${modelo.imagem})`
-        : '';
-    imgEl.classList.toggle('no-img', !modelo.imagem);
-
-    // Tabela de descontos
-    const tbody = document.getElementById('discountTableBody');
-    tbody.innerHTML = '';
-    FAIXAS.forEach(f => {
-        const preco = modelo.preco_base * (1 - f.desc);
-        const maxLabel = f.max === Infinity ? '+' : `–${f.max}`;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${f.label}</td>
-            <td>${f.min}${f.max === Infinity ? '+' : '–' + f.max} un</td>
-            <td class="${f.desc > 0 ? 'desc-badge' : ''}">${f.desc > 0 ? '-' + (f.desc*100) + '%' : '—'}</td>
-            <td><strong>${formatBRL(preco)}</strong></td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    document.getElementById('modalQtd').value = 1;
-    calcularModal();
-
-    const overlay = document.getElementById('modeloModal');
-    overlay.hidden = false;
-    document.body.style.overflow = 'hidden';
-    setTimeout(() => overlay.classList.add('is-open'), 10);
-}
-
-function fecharModal() {
-    const overlay = document.getElementById('modeloModal');
-    overlay.classList.remove('is-open');
-    setTimeout(() => {
-        overlay.hidden = true;
-        document.body.style.overflow = '';
-    }, 260);
-}
-
-function calcularModal() {
-    if (!modeloAtual) return;
-    const qtd   = parseInt(document.getElementById('modalQtd').value) || 1;
-    const faixa = getDesconto(qtd);
-    const preco = modeloAtual.preco_base * (1 - faixa.desc);
-    const total = preco * qtd;
-    const economia = (modeloAtual.preco_base - preco) * qtd;
-
-    document.getElementById('modalTotal').textContent = formatBRL(total);
-    const econEl = document.getElementById('modalEconomia');
-    if (faixa.desc > 0) {
-        econEl.textContent = `Você economiza ${formatBRL(economia)}`;
-        econEl.style.display = 'inline-block';
-    } else {
-        econEl.style.display = 'none';
+    function getDesconto(qtd) {
+        return FAIXAS.find(f => qtd >= f.min && qtd <= f.max) || FAIXAS[0];
     }
 
-    // Destacar linha ativa na tabela
-    document.querySelectorAll('#discountTableBody tr').forEach((tr, i) => {
-        tr.classList.toggle('row-active', FAIXAS[i].label === faixa.label);
+    function formatBRL(v) {
+        return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    let modeloAtual = null;
+
+    // ── Botões "Detalhes" nos cards ──
+    document.querySelectorAll('[data-modal]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            try {
+                var modelo = JSON.parse(this.getAttribute('data-modal'));
+                abrirModal(modelo);
+            } catch (e) {
+                console.error('Erro ao parsear modelo:', e);
+            }
+        });
     });
-}
 
-document.getElementById('modalQtd').addEventListener('input', calcularModal);
+    function abrirModal(modelo) {
+        modeloAtual = modelo;
 
-document.getElementById('modeloModal').addEventListener('click', function(e) {
-    if (e.target === this) fecharModal();
-});
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') fecharModal();
-});
+        document.getElementById('modalNome').textContent      = modelo.nome;
+        document.getElementById('modalCategoria').textContent = modelo.categoria;
+        document.getElementById('modalDesc').textContent      = modelo.descricao || 'Peça personalizada sob encomenda.';
 
-// Botoes "Quero esse modelo" dos cards -> seleciona no simulador
-document.querySelectorAll('[data-model-id]').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        const id = this.dataset.modelId;
-        const sel = document.getElementById('modelo_id');
-        if (sel) {
-            sel.value = id;
-            sel.dispatchEvent(new Event('change'));
+        var imgEl = document.getElementById('modalImg');
+        imgEl.style.backgroundImage = modelo.imagem
+            ? 'url(/assets/img/modelos/' + modelo.imagem + ')'
+            : '';
+        imgEl.classList.toggle('no-img', !modelo.imagem);
+
+        // Tabela de descontos
+        var tbody = document.getElementById('discountTableBody');
+        tbody.innerHTML = '';
+        FAIXAS.forEach(function (f) {
+            var preco = modelo.preco_base * (1 - f.desc);
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td>' + f.label + '</td>' +
+                '<td>' + f.min + (f.max === Infinity ? '+' : '–' + f.max) + ' un</td>' +
+                '<td class="' + (f.desc > 0 ? 'desc-badge' : '') + '">' + (f.desc > 0 ? '-' + (f.desc * 100) + '%' : '—') + '</td>' +
+                '<td><strong>' + formatBRL(preco) + '</strong></td>';
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('modalQtd').value = 1;
+        calcularModal();
+
+        var overlay = document.getElementById('modeloModal');
+        overlay.hidden = false;
+        document.body.style.overflow = 'hidden';
+        setTimeout(function () { overlay.classList.add('is-open'); }, 10);
+    }
+
+    function fecharModal() {
+        var overlay = document.getElementById('modeloModal');
+        overlay.classList.remove('is-open');
+        setTimeout(function () {
+            overlay.hidden = true;
+            document.body.style.overflow = '';
+        }, 260);
+    }
+
+    function calcularModal() {
+        if (!modeloAtual) return;
+        var qtd    = parseInt(document.getElementById('modalQtd').value) || 1;
+        var faixa  = getDesconto(qtd);
+        var preco  = modeloAtual.preco_base * (1 - faixa.desc);
+        var total  = preco * qtd;
+        var economia = (modeloAtual.preco_base - preco) * qtd;
+
+        document.getElementById('modalTotal').textContent = formatBRL(total);
+        var econEl = document.getElementById('modalEconomia');
+        if (faixa.desc > 0) {
+            econEl.textContent = 'Você economiza ' + formatBRL(economia);
+            econEl.style.display = 'inline-block';
+        } else {
+            econEl.style.display = 'none';
         }
+
+        document.querySelectorAll('#discountTableBody tr').forEach(function (tr, i) {
+            tr.classList.toggle('row-active', FAIXAS[i] && FAIXAS[i].label === faixa.label);
+        });
+    }
+
+    // ── Eventos do modal ──
+    document.getElementById('modalQtd').addEventListener('input', calcularModal);
+
+    document.getElementById('modalCloseBtn').addEventListener('click', fecharModal);
+
+    document.getElementById('modalBtnSimulador').addEventListener('click', fecharModal);
+
+    document.getElementById('modeloModal').addEventListener('click', function (e) {
+        if (e.target === this) fecharModal();
     });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') fecharModal();
+    });
+
+    // ── Botões "Quero esse modelo" nos cards → seleciona no simulador ──
+    document.querySelectorAll('[data-model-id]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id  = this.dataset.modelId;
+            var sel = document.getElementById('modelo_id');
+            if (sel) {
+                sel.value = id;
+                sel.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
 });
 </script>
 
