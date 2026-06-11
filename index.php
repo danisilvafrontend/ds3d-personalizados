@@ -27,8 +27,15 @@ require __DIR__ . '/includes/header.php';
             </ul>
         </div>
         <div class="hero-product-wrap">
-            <div class="hero-product-img">
-                <span class="hero-product-placeholder">Foto do produto em breve</span>
+            <div class="hero-product-img hero-product-video">
+                <video
+                    src="/assets/img/impressao.mp4"
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    preload="metadata"
+                ></video>
             </div>
             <div class="hero-badge">
                 <p class="mini-label">Estimativas a partir de</p>
