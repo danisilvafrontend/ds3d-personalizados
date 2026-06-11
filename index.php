@@ -63,7 +63,17 @@ require __DIR__ . '/includes/header.php';
             <?php foreach ($modelos as $modelo): ?>
                 <article class="model-card">
                     <div class="model-thumb">
-                        <span>Imagem</span>
+                        <?php if (!empty($modelo['imagem_principal'])): ?>
+                            <img
+                                src="/assets/img/modelos/<?= htmlspecialchars($modelo['imagem_principal']) ?>"
+                                alt="<?= htmlspecialchars($modelo['nome']) ?>"
+                                loading="lazy"
+                                width="400"
+                                height="400"
+                            >
+                        <?php else: ?>
+                            <span class="model-thumb-placeholder">Foto em breve</span>
+                        <?php endif; ?>
                     </div>
                     <div class="model-content">
                         <p class="card-tag"><?= htmlspecialchars($modelo['categoria_nome'] ?? 'Modelo') ?></p>
