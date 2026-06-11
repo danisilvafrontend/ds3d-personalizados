@@ -39,7 +39,7 @@ require __DIR__ . '/includes/header.php';
             </div>
             <div class="hero-badge">
                 <p class="mini-label">Estimativas a partir de</p>
-                <strong><?= formatMoney(21.36) ?></strong>
+                <strong><?= formatMoney(15.00) ?></strong>
             </div>
         </div>
     </div>
