@@ -7,6 +7,15 @@ requireLogin();
 $msg = '';
 $categorias = $pdo->query('SELECT id, nome FROM categorias WHERE ativo=1 ORDER BY nome')->fetchAll();
 
+// Pasta de imagens dos modelos
+define('MODELOS_IMG_DIR', __DIR__ . '/../assets/img/modelos/');
+define('MODELOS_IMG_URL', '/assets/img/modelos/');
+
+// Cria a pasta automaticamente se não existir
+if (!is_dir(MODELOS_IMG_DIR)) {
+    mkdir(MODELOS_IMG_DIR, 0755, true);
+}
+
 // Salvar modelo
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'salvar') {
     $id            = (int)($_POST['id'] ?? 0);
@@ -37,6 +46,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'salvar'
             ':custo'=>$custo_base,':prazo'=>$prazo,':ativo'=>$ativo,
             ':destaque'=>$destaque,':ordem'=>$ordem,':id'=>$id
         ]);
+
+        // Upload de imagem ao editar também
+        if (!empty($_FILES['imagem']['name'])) {
+            $ext = strtolower(pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION));
+            $allowed = ['jpg','jpeg','png','webp'];
+            if (in_array($ext, $allowed, true)) {
+                $filename = $slug . '-' . time() . '.' . $ext;
+                $dest = MODELOS_IMG_DIR . $filename;
+                if (move_uploaded_file($_FILES['imagem']['tmp_name'], $dest)) {
+                    // Remove imagem principal anterior e insere nova
+                    $pdo->prepare('UPDATE modelo_imagens SET principal=0 WHERE modelo_id=:id')
+                        ->execute([':id'=>$id]);
+                    $pdo->prepare('INSERT INTO modelo_imagens (modelo_id, arquivo, principal, ordem_exibicao) VALUES (:mid, :arq, 1, 1)')
+                        ->execute([':mid'=>$id,':arq'=>$filename]);
+                }
+            }
+        }
+
         $msg = 'Modelo atualizado!';
     } else {
         $stmt = $pdo->prepare('INSERT INTO modelos
@@ -57,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'salvar'
             $allowed = ['jpg','jpeg','png','webp'];
             if (in_array($ext, $allowed, true)) {
                 $filename = $slug . '-' . time() . '.' . $ext;
-                $dest = __DIR__ . '/../assets/img/' . $filename;
+                $dest = MODELOS_IMG_DIR . $filename;
                 if (move_uploaded_file($_FILES['imagem']['tmp_name'], $dest)) {
                     $pdo->prepare('INSERT INTO modelo_imagens (modelo_id, arquivo, principal, ordem_exibicao) VALUES (:mid, :arq, 1, 1)')
                         ->execute([':mid'=>$novoId,':arq'=>$filename]);
@@ -177,13 +204,28 @@ $modelos = $pdo->query(
                     </div>
                 </div>
 
-                <?php if (!$editando): ?>
                 <div class="form-group">
                     <label>Imagem principal</label>
-                    <input type="file" name="imagem" accept="image/*">
-                    <small>JPG, PNG ou WebP. Você pode adicionar mais imagens após salvar.</small>
+                    <?php if ($editando): ?>
+                        <?php
+                        $imgAtual = $pdo->prepare('SELECT arquivo FROM modelo_imagens WHERE modelo_id=:id AND principal=1 LIMIT 1');
+                        $imgAtual->execute([':id'=>$editando['id']]);
+                        $imgAtual = $imgAtual->fetchColumn();
+                        ?>
+                        <?php if ($imgAtual): ?>
+                            <div style="margin-bottom:8px">
+                                <img src="<?= MODELOS_IMG_URL . htmlspecialchars($imgAtual) ?>"
+                                     style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #ddd" alt="">
+                                <small style="display:block;color:#888;margin-top:4px">Imagem atual</small>
+                            </div>
+                        <?php endif; ?>
+                        <input type="file" name="imagem" accept="image/*">
+                        <small>Envie uma nova imagem para substituir a atual. JPG, PNG ou WebP.</small>
+                    <?php else: ?>
+                        <input type="file" name="imagem" accept="image/*">
+                        <small>JPG, PNG ou WebP. Salva em <code>assets/img/modelos/</code></small>
+                    <?php endif; ?>
                 </div>
-                <?php endif; ?>
 
                 <div class="form-row form-checks">
                     <div class="form-check">
@@ -219,7 +261,7 @@ $modelos = $pdo->query(
                 <tr>
                     <td>
                         <?php if ($m['imagem']): ?>
-                            <img src="/assets/img/<?= htmlspecialchars($m['imagem']) ?>" class="thumb" alt="">
+                            <img src="<?= MODELOS_IMG_URL . htmlspecialchars($m['imagem']) ?>" class="thumb" alt="">
                         <?php else: ?>
                             <span class="no-img">—</span>
                         <?php endif; ?>
