@@ -7,6 +7,16 @@ $config = getSiteConfig($pdo);
 $modelos = getFeaturedModels($pdo, 6);
 $tipos = getCustomizationTypes($pdo);
 
+/* Pré-carrega galeria de cada modelo para passar ao JS */
+$galeriasMap = [];
+foreach ($modelos as $modelo) {
+    $stmt = $pdo->prepare(
+        'SELECT arquivo FROM modelo_imagens WHERE modelo_id=:id ORDER BY principal DESC, ordem_exibicao ASC'
+    );
+    $stmt->execute([':id' => (int)$modelo['id']]);
+    $galeriasMap[(int)$modelo['id']] = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+}
+
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="hero-section">
@@ -65,6 +75,7 @@ require __DIR__ . '/includes/header.php';
                 $imgStyle = !empty($modelo['imagem_principal'])
                     ? 'background-image:url(/assets/img/modelos/' . htmlspecialchars($modelo['imagem_principal']) . ')'
                     : '';
+                $galeria = $galeriasMap[(int)$modelo['id']] ?? [];
                 $modeloJson = htmlspecialchars(json_encode([
                     'id'         => (int)$modelo['id'],
                     'nome'       => $modelo['nome'],
@@ -72,6 +83,7 @@ require __DIR__ . '/includes/header.php';
                     'descricao'  => $modelo['descricao'] ?? $modelo['descricao_curta'] ?? '',
                     'preco_base' => (float)$modelo['preco_base'],
                     'imagem'     => $modelo['imagem_principal'] ?? '',
+                    'galeria'    => $galeria,
                 ], JSON_UNESCAPED_UNICODE), ENT_QUOTES);
                 ?>
                 <article class="model-card">
@@ -103,12 +115,16 @@ require __DIR__ . '/includes/header.php';
 
 <!-- Modal de detalhes do modelo -->
 <div id="modeloModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalNome" hidden>
-    <div class="modal-box">
+    <div class="modal-box modal-box--with-gallery">
         <button class="modal-close" id="modalCloseBtn" aria-label="Fechar">&times;</button>
         <div class="modal-inner">
-            <div class="modal-img-wrap">
-                <div class="modal-img" id="modalImg"></div>
+
+            <!-- Coluna de imagens (galeria vertical) -->
+            <div class="modal-gallery-col" id="modalGalleryCol">
+                <!-- preenchida pelo JS -->
             </div>
+
+            <!-- Conteúdo -->
             <div class="modal-body">
                 <p class="card-tag" id="modalCategoria"></p>
                 <h2 id="modalNome"></h2>
@@ -145,6 +161,100 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 </div>
+
+<style>
+/* ── Galeria vertical no modal ── */
+.modal-box--with-gallery .modal-inner {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 0;
+    align-items: start;
+}
+.modal-gallery-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px 16px 24px 24px;
+    max-height: 80vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #d4c5bc transparent;
+    background: #f7f3f0;
+    border-right: 1px solid #ece5df;
+    border-radius: 16px 0 0 16px;
+}
+.modal-gallery-col::-webkit-scrollbar { width: 4px; }
+.modal-gallery-col::-webkit-scrollbar-thumb { background: #d4c5bc; border-radius: 4px; }
+.modal-gallery-thumb {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color .18s, transform .18s;
+    background: #e8ddd7;
+}
+.modal-gallery-thumb:hover {
+    border-color: #6e2132;
+    transform: scale(1.03);
+}
+.modal-gallery-thumb.is-active {
+    border-color: #6e2132;
+}
+.modal-gallery-empty {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #e8ddd7;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #bbb;
+    font-size: .75rem;
+}
+/* Imagem principal (grande) — usada no modal-img quando galeria está ativa */
+.modal-img-wrap { display: none; } /* esconde o antigo wrap quando usa galeria */
+.modal-body { padding: 24px; overflow-y: auto; max-height: 80vh; }
+
+/* Imagem grande ao clicar na thumb */
+.modal-img-featured {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    background: #e8ddd7;
+    display: block;
+}
+
+/* Mobile: empilha coluna de imagens acima do body */
+@media (max-width: 640px) {
+    .modal-box--with-gallery .modal-inner {
+        grid-template-columns: 1fr;
+    }
+    .modal-gallery-col {
+        flex-direction: row;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 12px 16px;
+        border-right: none;
+        border-bottom: 1px solid #ece5df;
+        border-radius: 16px 16px 0 0;
+        gap: 8px;
+    }
+    .modal-gallery-thumb {
+        width: 72px;
+        height: 72px;
+        flex-shrink: 0;
+    }
+    .modal-img-featured {
+        aspect-ratio: 16/9;
+    }
+    .modal-body { max-height: none; padding: 16px; }
+}
+</style>
 
 <section class="section" id="simulador">
     <div class="container simulator-grid">
@@ -256,6 +366,54 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let modeloAtual = null;
 
+    /* ── Galeria vertical ── */
+    function renderGaleria(galeria, imgPrincipal) {
+        var col = document.getElementById('modalGalleryCol');
+        col.innerHTML = '';
+
+        // Se não há galeria, usa imagem principal como única thumb
+        var fotos = galeria && galeria.length > 0 ? galeria : (imgPrincipal ? [imgPrincipal] : []);
+
+        if (fotos.length === 0) {
+            var empty = document.createElement('div');
+            empty.className = 'modal-gallery-empty';
+            empty.textContent = 'Sem foto';
+            col.appendChild(empty);
+            return;
+        }
+
+        // Imagem em destaque (grande) — inserida no topo do modal-body
+        var bodyEl      = document.querySelector('.modal-body');
+        var featuredId  = 'modalImgFeatured';
+        var featured    = document.getElementById(featuredId);
+        if (!featured) {
+            featured = document.createElement('img');
+            featured.id        = featuredId;
+            featured.className = 'modal-img-featured';
+            featured.alt       = '';
+            featured.loading   = 'lazy';
+            bodyEl.insertBefore(featured, bodyEl.firstChild);
+        }
+        featured.src = '/assets/img/modelos/' + fotos[0];
+
+        // Thumbs na coluna lateral
+        fotos.forEach(function (arquivo, idx) {
+            var img = document.createElement('img');
+            img.src       = '/assets/img/modelos/' + arquivo;
+            img.alt       = '';
+            img.loading   = 'lazy';
+            img.className = 'modal-gallery-thumb' + (idx === 0 ? ' is-active' : '');
+            img.addEventListener('click', function () {
+                featured.src = '/assets/img/modelos/' + arquivo;
+                col.querySelectorAll('.modal-gallery-thumb').forEach(function (t) {
+                    t.classList.remove('is-active');
+                });
+                img.classList.add('is-active');
+            });
+            col.appendChild(img);
+        });
+    }
+
     // ── Botões "Detalhes" nos cards ──
     document.querySelectorAll('[data-modal]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -275,11 +433,8 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modalCategoria').textContent = modelo.categoria;
         document.getElementById('modalDesc').textContent      = modelo.descricao || 'Peça personalizada sob encomenda.';
 
-        var imgEl = document.getElementById('modalImg');
-        imgEl.style.backgroundImage = modelo.imagem
-            ? 'url(/assets/img/modelos/' + modelo.imagem + ')'
-            : '';
-        imgEl.classList.toggle('no-img', !modelo.imagem);
+        // Renderiza galeria vertical
+        renderGaleria(modelo.galeria || [], modelo.imagem || '');
 
         // Tabela de descontos
         var tbody = document.getElementById('discountTableBody');
@@ -289,8 +444,8 @@ document.addEventListener('DOMContentLoaded', function () {
             var tr = document.createElement('tr');
             tr.innerHTML =
                 '<td>' + f.label + '</td>' +
-                '<td>' + f.min + (f.max === Infinity ? '+' : '–' + f.max) + ' un</td>' +
-                '<td class="' + (f.desc > 0 ? 'desc-badge' : '') + '">' + (f.desc > 0 ? '-' + (f.desc * 100) + '%' : '—') + '</td>' +
+                '<td>' + f.min + (f.max === Infinity ? '+' : '\u2013' + f.max) + ' un</td>' +
+                '<td class="' + (f.desc > 0 ? 'desc-badge' : '') + '">' + (f.desc > 0 ? '-' + (f.desc * 100) + '%' : '\u2014') + '</td>' +
                 '<td><strong>' + formatBRL(preco) + '</strong></td>';
             tbody.appendChild(tr);
         });
@@ -337,15 +492,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Eventos do modal ──
     document.getElementById('modalQtd').addEventListener('input', calcularModal);
-
     document.getElementById('modalCloseBtn').addEventListener('click', fecharModal);
-
     document.getElementById('modalBtnSimulador').addEventListener('click', fecharModal);
-
     document.getElementById('modeloModal').addEventListener('click', function (e) {
         if (e.target === this) fecharModal();
     });
-
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') fecharModal();
     });
